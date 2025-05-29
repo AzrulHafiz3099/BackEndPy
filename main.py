@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, register, db_class, db_student, db_exam, db_question, db_scheme  # your routers
+from routes import auth, register, db_class, db_student, db_exam, db_question, db_scheme, db_result, db_homepage  # your routers
 
 app = FastAPI()
 
@@ -19,6 +19,8 @@ app.include_router(db_student.router)
 app.include_router(db_exam.router)
 app.include_router(db_question.router)
 app.include_router(db_scheme.router)
+app.include_router(db_result.router)
+app.include_router(db_homepage.router)
 
 @app.get("/")
 def read_root():
