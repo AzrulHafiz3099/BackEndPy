@@ -18,8 +18,7 @@ def get_results_by_lecturer(lecturer_id: str = Query(...)):
                 s.Student_Name AS student_name,
                 c.Class_Name AS class_name,
                 a.Timestamp AS timestamp,
-                r.Score AS score,
-                r.Status AS status
+                r.Score AS score
             FROM result r
             JOIN answer_submission a ON r.Submission_ID = a.Submission_ID
             JOIN student s ON a.Student_ID = s.Student_ID
@@ -48,7 +47,6 @@ def get_result_by_result_id(result_id: str = Query(...)):
                 e.Exam_Name AS exam_name,
                 s.Phone_Number AS phone_number,
                 r.Score AS score,
-                r.Status AS status,
                 a.Timestamp AS timestamp
             FROM result r
             JOIN answer_submission a ON r.Submission_ID = a.Submission_ID
@@ -82,8 +80,7 @@ def get_results_by_lecturer5(lecturer_id: str = Query(...)):
                 s.Student_Name AS student_name,
                 c.Class_Name AS class_name,
                 a.Timestamp AS timestamp,
-                r.Score AS score,
-                r.Status AS status
+                r.Score AS score
             FROM result r
             JOIN answer_submission a ON r.Submission_ID = a.Submission_ID
             JOIN student s ON a.Student_ID = s.Student_ID
