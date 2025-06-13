@@ -47,6 +47,7 @@ def get_result_by_result_id(result_id: str = Query(...)):
                 e.Exam_Name AS exam_name,
                 s.Phone_Number AS phone_number,
                 r.Score AS score,
+                r.Summary AS summary,
                 a.Timestamp AS timestamp
             FROM result r
             JOIN answer_submission a ON r.Submission_ID = a.Submission_ID
@@ -86,7 +87,7 @@ def get_results_by_lecturer5(lecturer_id: str = Query(...)):
             JOIN student s ON a.Student_ID = s.Student_ID
             JOIN class c ON s.Class_ID = c.Class_ID
             WHERE c.Lecturer_ID = %s
-            ORDER BY CAST(SUBSTRING(r.Result_ID, 3) AS UNSIGNED) ASC
+            ORDER BY a.Timestamp DESC
             LIMIT 5
         """, (lecturer_id,))
         data = cursor.fetchall()
