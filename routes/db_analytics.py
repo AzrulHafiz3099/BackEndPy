@@ -64,3 +64,88 @@ def get_completion_stats(class_id: str = Query(...), exam_id: str = Query(...)):
         cursor.close()
         conn.close()
         print("🔒 Database connection closed.")
+
+@router.get("/score_distribution")
+def get_score_distribution(class_id: str = Query(...), exam_id: str = Query(...)):
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+
+    # total marks
+    cur.execute("SELECT SUM(Total_Marks) AS total_marks FROM question WHERE Exam_ID=%s", (exam_id,))
+    total_marks = cur.fetchone()["total_marks"] or 0
+    print(f"[DEBUG] Total Marks: {total_marks}")
+
+    # number of students who took it
+    cur.execute("""
+        SELECT COUNT(DISTINCT a.Student_ID) AS taken
+        FROM answer_submission a
+        JOIN student s USING(Student_ID)
+        WHERE a.Exam_ID=%s AND s.Class_ID=%s
+    """, (exam_id, class_id))
+    students_taken = cur.fetchone()["taken"] or 0
+    print(f"[DEBUG] Students Taken: {students_taken}")
+
+    # distribution of scores
+    cur.execute("""
+        SELECT r.Score AS score, COUNT(*) AS count FROM result r
+        JOIN answer_submission a USING(Submission_ID)
+        JOIN student s USING(Student_ID)
+        WHERE a.Exam_ID=%s AND s.Class_ID=%s
+        GROUP BY r.Score
+        ORDER BY r.Score DESC
+    """, (exam_id, class_id))
+    dist = cur.fetchall()
+    print(f"[DEBUG] Score Distribution: {dist}")
+
+    cur.close()
+    conn.close()
+
+    return {
+        "success": True,
+        "data": {
+            "total_marks": total_marks,
+            "students_taken": students_taken,
+            "distribution": dist
+        }
+    }
+
+@router.get("/exam_summary")
+def get_exam_summary(class_id: str, exam_id: str):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Get class and exam name
+        cursor.execute("""
+            SELECT c.Class_Name, e.Exam_Name
+            FROM class c
+            JOIN exam e ON c.Class_ID = e.Class_ID
+            WHERE c.Class_ID = %s AND e.Exam_ID = %s
+        """, (class_id, exam_id))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Class or Exam not found")
+
+        class_name = row['Class_Name']
+        exam_name = row['Exam_Name']
+
+        # Get student scores
+        cursor.execute("""
+            SELECT s.Student_Name, r.Score
+            FROM student s
+            JOIN answer_submission a ON s.Student_ID = a.Student_ID
+            JOIN result r ON a.Submission_ID = r.Submission_ID
+            WHERE s.Class_ID = %s AND a.Exam_ID = %s
+        """, (class_id, exam_id))
+        student_scores = cursor.fetchall()
+
+        return {
+            "class_name": class_name,
+            "exam_name": exam_name,
+            "students": student_scores
+        }
+
+    finally:
+        cursor.close()
+        conn.close()
+
