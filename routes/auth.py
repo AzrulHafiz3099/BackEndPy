@@ -20,8 +20,8 @@ def login(login: LoginRequest):
 
     cursor = conn.cursor(dictionary=True)
     sql = """
-        SELECT lecturer_id, email, password FROM lecturer 
-        WHERE email = %s OR lecturer_id = %s LIMIT 1
+        SELECT lecturer_id, email, phone_number, password FROM lecturer 
+        WHERE email = %s OR phone_number = %s LIMIT 1
     """
     cursor.execute(sql, (login.emailOrId, login.emailOrId))
     user = cursor.fetchone()
@@ -29,7 +29,7 @@ def login(login: LoginRequest):
     conn.close()
 
     if not user:
-        return {"success": False, "message": "Invalid email/ID or password"}
+        return {"success": False, "message": "Invalid email or phone number or password"}
 
     if pwd_context.verify(login.password, user["password"]):
         return {
@@ -38,4 +38,5 @@ def login(login: LoginRequest):
             "lecturer_id": user["lecturer_id"]
         }
     else:
-        return {"success": False, "message": "Invalid email/ID or password"}
+        return {"success": False, "message": "Invalid email or phone number or password"}
+
