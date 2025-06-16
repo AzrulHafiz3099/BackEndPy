@@ -43,8 +43,9 @@ def get_questions_by_exam(exam_id: str = Query(...)):
 class QuestionCreate(BaseModel):
     exam_id: str
     question_text: str
+    marks: float
 
-@router.post("/questions")
+@router.post("/add_questions")
 def add_question(question: QuestionCreate):
     conn = get_connection()
     if not conn:
@@ -56,9 +57,10 @@ def add_question(question: QuestionCreate):
         next_id = f"Q{(int(last['Question_ID'][1:]) + 1) if last else 1:03d}"
 
         cursor.execute("""
-            INSERT INTO question (Question_ID, Exam_ID, Question_Text)
-            VALUES (%s, %s, %s)
-        """, (next_id, question.exam_id, question.question_text))
+            INSERT INTO question (Question_ID, Exam_ID, Question_Text, Total_Marks)
+            VALUES (%s, %s, %s, %s)
+        """, (next_id, question.exam_id, question.question_text, question.marks))
+
         conn.commit()
         return {"success": True, "message": "Question added", "question_id": next_id}
     finally:
@@ -68,7 +70,7 @@ def add_question(question: QuestionCreate):
 # Update question
 class QuestionUpdate(BaseModel):
     question_text: str
-    total_marks: int
+    total_marks: float
 
 @router.put("/questions/{question_id}")
 def update_question(question_id: str, question: QuestionUpdate):

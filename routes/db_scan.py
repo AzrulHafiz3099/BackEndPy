@@ -75,30 +75,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SERVICE_KEY_PATH = os.path.join(BASE_DIR, "gradingbot_service.json")
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_KEY_PATH
 
-# @router.post("/upload")
-# async def upload_image(file: UploadFile = File(...)):
-#     """
-#     Receives an image file, sends it to Google Vision API, and prints extracted text.
-#     """
-#     try:
-#         contents = await file.read()
-
-#         client = vision.ImageAnnotatorClient()
-#         image = vision.Image(content=contents)
-
-#         response = client.document_text_detection(image=image)
-#         extracted_text = response.full_text_annotation.text
-
-#         print("----- Extracted Text -----")
-#         print(extracted_text)
-#         print("--------------------------")
-
-#         return {"success": True, "message": "Image processed successfully"}
-    
-#     except Exception as e:
-#         print("OCR error:", str(e))
-#         raise HTTPException(status_code=500, detail="OCR processing failed")
-
 @router.post("/upload")
 async def upload_image(
     file: UploadFile = File(...),
@@ -131,24 +107,34 @@ async def upload_image(
 
         results = []
         total_marks = 0
+        total_possible_marks = sum(scheme.get("marks", 0) for scheme in selected_schemes)
 
         # Step 3: Fuzzy match and assign marks
+        lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
+
         for scheme in selected_schemes:
             scheme_id = scheme.get("scheme_id")
             scheme_text = scheme.get("scheme_text", "").lower().strip()
             scheme_marks = scheme.get("marks", 0)
 
-            similarity = fuzz.partial_ratio(scheme_text, extracted_text)
-            matched = similarity > 80  # threshold can be tuned
+            matched = False
+            highest_similarity = 0
+
+            for line in lines:
+                sim = fuzz.token_set_ratio(scheme_text, line)
+                if sim > highest_similarity:
+                    highest_similarity = sim
+                if sim >= 80:  # Threshold can be adjusted
+                    matched = True
+                    break
 
             mark_awarded = scheme_marks if matched else 0
             total_marks += mark_awarded
-            total_possible_marks = sum(scheme.get("marks", 0) for scheme in selected_schemes)
 
             print(f"[DEBUG] Scheme ID: {scheme_id}")
             print(f"        Scheme Text: {scheme_text}")
             print(f"        Expected Marks: {scheme_marks}")
-            print(f"        Similarity: {similarity}")
+            print(f"        Highest Similarity: {highest_similarity}")
             print(f"        Matched: {matched}")
             print(f"        Marks Awarded: {mark_awarded}")
             print("----------------------------")
@@ -158,7 +144,7 @@ async def upload_image(
                 "scheme_text": scheme_text,
                 "expected_marks": scheme_marks,
                 "awarded_marks": mark_awarded,
-                "similarity": similarity
+                "similarity": highest_similarity
             })
 
         print(f"[DEBUG] Total Marks Awarded: {total_marks}")

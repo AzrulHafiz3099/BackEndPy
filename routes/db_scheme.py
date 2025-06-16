@@ -12,11 +12,11 @@ router = APIRouter(prefix="/api_scheme", tags=["Schemes"])
 class SchemeCreate(BaseModel):
     question_id: str
     scheme_text: str
-    marks: int
+    marks: float
 
 class SchemeUpdate(BaseModel):
     scheme_text: Optional[str] = None
-    marks: Optional[int] = None
+    marks: float
 
 # --- Routes ---
 
