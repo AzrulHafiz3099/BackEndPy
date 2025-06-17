@@ -15,7 +15,7 @@ def get_results_by_lecturer(lecturer_id: str = Query(...)):
             SELECT 
                 r.Result_ID AS result_id,
                 s.Student_ID AS student_id,
-                s.Student_Name AS student_name,
+                s.Matrix_Number AS student_matrix,
                 c.Class_Name AS class_name,
                 a.Timestamp AS timestamp,
                 r.Score AS score
@@ -42,7 +42,7 @@ def get_result_by_result_id(result_id: str = Query(...)):
     try:
         cursor.execute("""
             SELECT 
-                s.Student_Name AS student_name,
+                s.Matrix_Number AS matrix_number,
                 c.Class_Name AS class_name,
                 e.Exam_Name AS exam_name,
                 s.Phone_Number AS phone_number,
@@ -78,7 +78,7 @@ def get_results_by_lecturer5(lecturer_id: str = Query(...)):
             SELECT 
                 r.Result_ID AS result_id,
                 s.Student_ID AS student_id,
-                s.Student_Name AS student_name,
+                s.Matrix_Number AS matrix_number,
                 c.Class_Name AS class_name,
                 a.Timestamp AS timestamp,
                 r.Score AS score

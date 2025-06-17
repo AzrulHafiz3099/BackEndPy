@@ -131,7 +131,7 @@ def get_exam_summary(class_id: str, exam_id: str):
 
         # Get student scores
         cursor.execute("""
-            SELECT s.Student_Name, r.Score
+            SELECT s.Matrix_Number, r.Score
             FROM student s
             JOIN answer_submission a ON s.Student_ID = a.Student_ID
             JOIN result r ON a.Submission_ID = r.Submission_ID
