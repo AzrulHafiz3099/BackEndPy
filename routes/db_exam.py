@@ -139,16 +139,6 @@ async def preview_exam_file(file: UploadFile = File(...)):
 
         # ---------- Regex to parse questions & schemes ----------
         question_pattern = re.compile(
-            r'<Question\s*(\d+)\s*marks\s*=\s*"?(\\d+)"?>(.*?)</Question\s*\1>',
-            re.DOTALL | re.IGNORECASE
-        )
-        scheme_pattern = re.compile(
-            r'<Scheme\s*(\d+)\s*marks\s*=\s*"?(\\d+)"?>(.*?)</Scheme\s*\1>',
-            re.DOTALL | re.IGNORECASE
-        )
-
-        # Alternate simpler regex that works with your OCR quotes and casing:
-        question_pattern = re.compile(
             r'<Question\s*(\d+)\s*marks\s*=\s*"?(.*?)"?>(.*?)</Question\s*\1>',
             re.DOTALL | re.IGNORECASE
         )
@@ -157,17 +147,15 @@ async def preview_exam_file(file: UploadFile = File(...)):
             re.DOTALL | re.IGNORECASE
         )
 
-        # Find all questions
         questions_matches = question_pattern.findall(cleaned_text)
         print(f"Found {len(questions_matches)} question(s)")
 
         parsed = []
-
         for idx, (q_no, q_marks, q_text) in enumerate(questions_matches, start=1):
             q_text_clean = q_text.strip()
             print(f"\nQuestion {q_no}: {q_text_clean[:50]}... Marks: {q_marks}")
 
-            # Find question block (from start of this question to start of next question or end)
+            # Get question block
             q_start_regex = re.compile(
                 rf'<Question\s*{q_no}\s*marks\s*=\s*"?{q_marks}"?>',
                 re.IGNORECASE
@@ -188,7 +176,7 @@ async def preview_exam_file(file: UploadFile = File(...)):
 
             q_block = cleaned_text[q_start:q_end]
 
-            # Find schemes inside this question block
+            # Extract schemes
             schemes_for_q = []
             for s_no, s_marks, s_text in scheme_pattern.findall(q_block):
                 scheme_text_clean = s_text.strip()
@@ -210,18 +198,13 @@ async def preview_exam_file(file: UploadFile = File(...)):
         print(parsed)
         print("-----------------------------")
 
-        return {
-            "success": True,
-            "raw_text": cleaned_text,
-            "parsed": parsed
-        }
+        return {"success": True, "raw_text": cleaned_text, "parsed": parsed}
 
     except Exception as e:
         print(f"ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
+# ---------------- Create Exam with Parsed File ----------------
 @router.post("/exams_with_file")
 async def create_exam_with_file(
     class_id: str = Form(...),
@@ -257,7 +240,7 @@ async def create_exam_with_file(
                 (next_q_id, next_exam_id, q["question_text"], q.get("marks", 0))
             )
 
-            # Insert each scheme with its correct marks
+            # Insert each scheme with correct marks
             for scheme in q.get("schemes", []):
                 cursor.execute("SELECT Scheme_ID FROM scheme ORDER BY Scheme_ID DESC LIMIT 1")
                 last_s = cursor.fetchone()
@@ -265,12 +248,7 @@ async def create_exam_with_file(
 
                 cursor.execute(
                     "INSERT INTO scheme (Scheme_ID, Question_ID, Scheme_Text, Marks) VALUES (%s, %s, %s, %s)",
-                    (
-                        next_s_id,
-                        next_q_id,
-                        scheme["scheme_text"],
-                        scheme.get("marks", 0)  # use scheme marks
-                    )
+                    (next_s_id, next_q_id, scheme["scheme_text"], scheme.get("marks", 0))
                 )
 
         conn.commit()
