@@ -55,14 +55,17 @@ def add_student(student: StudentCreate):
         last = cursor.fetchone()
         next_id = f"S{(int(last['Student_ID'][1:]) + 1) if last else 1:03d}"
 
-        # ✅ Insert student with no name
+        # ✅ Insert student without Student_Name column
         cursor.execute("""
-            INSERT INTO student (Student_ID, Class_ID, Student_Name, Matrix_Number, Phone_Number)
-            VALUES (%s, %s, '', %s, %s)
+            INSERT INTO student (Student_ID, Class_ID, Matrix_Number, Phone_Number)
+            VALUES (%s, %s, %s, %s)
         """, (next_id, student.class_id, student.matrix, student.phone))
         conn.commit()
 
         return {"success": True, "message": "Student added", "student_id": next_id}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to add student: {str(e)}")
     finally:
         cursor.close()
         conn.close()

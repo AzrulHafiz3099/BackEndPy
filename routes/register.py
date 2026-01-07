@@ -1,11 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 from database import get_connection
-from passlib.context import CryptContext
+import bcrypt
 
 router = APIRouter()
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class RegisterRequest(BaseModel):
     full_name: str = Field(alias="Lecturer_Name")
@@ -15,7 +13,7 @@ class RegisterRequest(BaseModel):
     institution: str = Field(alias="Institution_Name")
 
     class Config:
-        allow_population_by_field_name = True  # Allow usage of both aliases and field names
+        allow_population_by_field_name = True
 
 @router.post("/register")
 def register(data: RegisterRequest):
@@ -36,7 +34,6 @@ def register(data: RegisterRequest):
     cursor.close()
     conn.close()
 
-    # Respond with custom messages if any already exist
     if email_exists and phone_exists:
         raise HTTPException(status_code=409, detail="Email and Phone number already registered")
     elif email_exists:
@@ -44,16 +41,16 @@ def register(data: RegisterRequest):
     elif phone_exists:
         raise HTTPException(status_code=409, detail="Phone number already registered")
 
-    # Proceed to insert if both are unique (reconnect again)
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Generate new lecturer_id
     cursor.execute("SELECT lecturer_id FROM lecturer ORDER BY lecturer_id DESC LIMIT 1")
     last = cursor.fetchone()
     new_id = f"L{(int(last['lecturer_id'][1:]) + 1) if last else 1:03}"
 
-    hashed_password = pwd_context.hash(data.password)
+    # Truncate password to 72 bytes and hash with bcrypt
+    password_bytes = data.password.encode('utf-8')[:72]
+    hashed_password = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode('utf-8')
 
     try:
         cursor.execute("""
