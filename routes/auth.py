@@ -2,11 +2,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from database import get_connection
-from passlib.context import CryptContext
+import bcrypt
 
 router = APIRouter()
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class LoginRequest(BaseModel):
     emailOrId: str
@@ -31,7 +29,11 @@ def login(login: LoginRequest):
     if not user:
         return {"success": False, "message": "Invalid email or phone number or password"}
 
-    if pwd_context.verify(login.password, user["password"]):
+    # Truncate password to 72 bytes and verify with bcrypt
+    password_bytes = login.password.encode('utf-8')[:72]
+    stored_hash = user["password"].encode('utf-8')
+    
+    if bcrypt.checkpw(password_bytes, stored_hash):
         return {
             "success": True,
             "message": "Login successful",
@@ -39,4 +41,3 @@ def login(login: LoginRequest):
         }
     else:
         return {"success": False, "message": "Invalid email or phone number or password"}
-
